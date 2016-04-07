@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	//	"net/http"
+	"net/http"
 	"os"
 )
 
@@ -41,12 +41,27 @@ func NewCla(configFileName string) *Cla {
 	for key, _ := range cla.AuthorizedVoters {
 		cla.voterNumberMap[key] = 0
 	}
-
 	cla.validationNumbers = make([]uint64, len(cla.voterNumberMap))
 
 	return &cla
 }
 
+func listHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
+	// if request comes from CTF, send full list of validation numbers
+}
+
+func registrationHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
+	// if name on request is on the authorized voter list,
+	//	generate validation number and send it
+}
+
 func main() {
-	_ = NewCla("cla/config.json")
+	cla := NewCla("cla/config.json")
+	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
+		registrationHandler(w, r, cla)
+	})
+	http.HandleFunc("/list", func(w http.ResponseWriter, r *http.Request) {
+		listHandler(w, r, cla)
+	})
+	http.ListenAndServeTLS(":9889", "certs/localhost.crt", "keys/localhost.key", nil)
 }
