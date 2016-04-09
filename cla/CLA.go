@@ -1,6 +1,9 @@
 package main
 
 import (
+	"crypto"
+	"crypto/rsa"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,7 +18,7 @@ type claConfig struct {
 
 type Cla struct {
 	Config            claConfig
-	AuthorizedVoters  map[string]uint64 // map of voter names to their public keys
+	AuthorizedVoters  map[string]rsa.PublicKey // map of voter names to their public keys
 	validationNumbers []uint64
 	voterNumberMap    map[string]uint64 // map of voter names to their validation numbers
 }
@@ -51,8 +54,22 @@ func listHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
 }
 
 func registrationHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
-	// if name on request is on the authorized voter list,
-	//	generate validation number and send it
+	name := r.URL.Query().Get("name")
+	sig := r.URL.Query().Get("sig")
+	if name == "" || sig == "" {
+		http.Error(w, "User did not specify their name, or did not sign their request.", 400)
+		return
+	}
+
+	pk := cla.AuthorizedVoters[name]
+	hashed := sha256.Sum256([]byte(name))
+	err := rsa.VerifyPKCS1v15(&pk, crypto.SHA256, hashed[:], []byte(sig))
+	if err != nil {
+		http.Error(w, "User is not an authorized voter.", 403)
+		return
+	}
+
+	// generate a validation number and return it
 }
 
 func main() {
@@ -63,5 +80,6 @@ func main() {
 	http.HandleFunc("/list", func(w http.ResponseWriter, r *http.Request) {
 		listHandler(w, r, cla)
 	})
+	fmt.Println("Listening and Serving...")
 	http.ListenAndServeTLS(":9889", "certs/localhost.crt", "keys/localhost.key", nil)
 }
