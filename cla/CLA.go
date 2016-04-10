@@ -1,79 +1,139 @@
 package main
 
 import (
-	"crypto"
-	"crypto/rsa"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 type claConfig struct {
-	Public  uint64
-	Private uint64
+	ClaSecret uint64
+	CtfSecret uint64
 }
 
 type Cla struct {
-	Config            claConfig
-	AuthorizedVoters  map[string]rsa.PublicKey // map of voter names to their public keys
-	validationNumbers []uint64
-	voterNumberMap    map[string]uint64 // map of voter names to their validation numbers
+	Config           claConfig
+	AuthorizedVoters map[string]string // map of voter names to their shared secret with the CLA
+	voterNumberMap   map[string]string // map of voter names to their validation numbers
+	generator        *rand.Zipf
 }
 
-func NewCla(configFileName string) *Cla {
+type registration struct {
+	Name         string
+	SharedSecret string
+}
+
+func NewCla(configFileName string) (*Cla, error) {
 	var cla Cla
 
 	voterFile, err := os.Open(configFileName)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error opening file", configFileName, ":", err)
+		return nil, err
 	}
 	defer voterFile.Close()
 
 	fileBytes, err := ioutil.ReadAll(voterFile)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error reading file", configFileName, ":", err)
+		return nil, err
 	}
 	if err = json.Unmarshal(fileBytes, &cla); err != nil {
 		fmt.Fprintln(os.Stderr, "Error Unmarshalling data:", err)
+		return nil, err
 	}
 
-	cla.voterNumberMap = make(map[string]uint64)
+	cla.voterNumberMap = make(map[string]string)
 	for key, _ := range cla.AuthorizedVoters {
-		cla.voterNumberMap[key] = 0
+		cla.voterNumberMap[key] = ""
 	}
-	cla.validationNumbers = make([]uint64, len(cla.voterNumberMap))
 
-	return &cla
+	s := rand.NewSource(1011001)
+	r := rand.New(s)
+	cla.generator = rand.NewZipf(r, 145150.7518525715, 145150.7518525715, 0xFFFFFF)
+
+	return &cla, nil
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
 	// if request comes from CTF, send full list of validation numbers
 }
 
+func generateRandom(cla *Cla) string {
+	newNum := false
+	var v uint64
+	for !newNum {
+		v = cla.generator.Uint64()
+		if presentInMap(cla, v) {
+			newNum = false
+		} else {
+			newNum = true
+		}
+	}
+	return strconv.FormatUint(v, 10)
+}
+
+func presentInMap(cla *Cla, v uint64) bool {
+	for _, b := range cla.voterNumberMap {
+		n, err := strconv.ParseUint(b, 10, 64)
+		if err != nil {
+			return false
+		}
+		if n == v {
+			return true
+		}
+	}
+	return false
+}
+
 func registrationHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
-	name := r.URL.Query().Get("name")
-	sig := r.URL.Query().Get("sig")
-	if name == "" || sig == "" {
-		http.Error(w, "User did not specify their name, or did not sign their request.", 400)
+	var args registration
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error unpacking user args.", 400)
+	}
+
+	err = json.Unmarshal(body, &args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error unmarshalling json!", err)
+	}
+
+	if args.Name == "" || args.SharedSecret == "" {
+		http.Error(w, "User did not send either their name or shared secret their request.", 400)
 		return
 	}
 
-	pk := cla.AuthorizedVoters[name]
-	hashed := sha256.Sum256([]byte(name))
-	err := rsa.VerifyPKCS1v15(&pk, crypto.SHA256, hashed[:], []byte(sig))
-	if err != nil {
+	storedSecret := cla.AuthorizedVoters[args.Name]
+	if storedSecret != args.SharedSecret {
 		http.Error(w, "User is not an authorized voter.", 403)
 		return
 	}
 
-	// generate a validation number and return it
+	if cla.voterNumberMap[args.Name] != "" {
+		http.Error(w, "User has already registered.", 400)
+		return
+	}
+
+	val := generateRandom(cla)
+	cla.voterNumberMap[args.Name] = val
+
+	resp := val
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(resp))
 }
 
 func main() {
-	cla := NewCla("cla/config.json")
+	cla, err := NewCla("cla/config.json")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: ", err)
+		return
+	}
+
 	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
 		registrationHandler(w, r, cla)
 	})
