@@ -71,8 +71,14 @@ func registrationPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if resp.StatusCode > 300 {
+	if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusBadRequest {
 		renderError(w, r, string(contents), err, REGISTER)
+		return
+	}
+
+	if resp.StatusCode == http.StatusTeapot {
+		m := &Message{Text: "Voting is no longer underway!", Type: "msg"}
+		renderTemplate(w, r, m, REGISTER)
 		return
 	}
 

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 type claConfig struct {
@@ -52,9 +53,9 @@ func NewCla(configFileName string) (*Cla, error) {
 		cla.voterNumberMap[key] = ""
 	}
 
-	s := rand.NewSource(1011001)
+	s := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(s)
-	cla.generator = rand.NewZipf(r, 145150.7518525715, 145150.7518525715, 0xFFFFFF)
+	cla.generator = rand.NewZipf(r, 1.14, 2402.72, 5000)
 
 	return &cla, nil
 }
@@ -74,6 +75,7 @@ func generateRandom(cla *Cla) string {
 			newNum = true
 		}
 	}
+	fmt.Println("generated: ", v)
 	return strconv.FormatUint(v, 10)
 }
 
@@ -90,12 +92,21 @@ func presentInMap(cla *Cla, v uint64) bool {
 	return false
 }
 
+func votingDone(cla *Cla) bool {
+	for _, b := range cla.voterNumberMap {
+		if b == "" {
+			return false
+		}
+	}
+	return true
+}
+
 func registrationHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
 	var args registration
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error unpacking user args.", 400)
+		http.Error(w, "Error unpacking user args.", http.StatusBadRequest)
 	}
 
 	err = json.Unmarshal(body, &args)
@@ -104,22 +115,28 @@ func registrationHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
 	}
 
 	if args.Name == "" || args.SharedSecret == "" {
-		http.Error(w, "User did not send either their name or shared secret their request.", 400)
+		http.Error(w, "User did not send either their name or shared secret their request.", http.StatusBadRequest)
 		return
 	}
 
 	storedSecret := cla.AuthorizedVoters[args.Name]
 	if storedSecret != args.SharedSecret {
-		http.Error(w, "User is not an authorized voter.", 403)
+		http.Error(w, "User is not an authorized voter.", http.StatusForbidden)
 		return
 	}
 
+	if votingDone(cla) {
+		w.WriteHeader(http.StatusTeapot)
+		w.Write([]byte("-1"))
+	}
+
 	if cla.voterNumberMap[args.Name] != "" {
-		http.Error(w, "User has already registered.", 400)
+		http.Error(w, "User has already registered.", http.StatusBadRequest)
 		return
 	}
 
 	val := generateRandom(cla)
+	fmt.Println("Using: ", val)
 	cla.voterNumberMap[args.Name] = val
 
 	resp := val
