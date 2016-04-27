@@ -12,8 +12,8 @@ import (
 )
 
 type claConfig struct {
-	ClaSecret uint64
-	CtfSecret uint64
+	ClaSecret string
+	CtfSecret string
 }
 
 type Cla struct {
@@ -25,6 +25,10 @@ type Cla struct {
 
 type registration struct {
 	Name         string
+	SharedSecret string
+}
+
+type listRequest struct {
 	SharedSecret string
 }
 
@@ -61,7 +65,76 @@ func NewCla(configFileName string) (*Cla, error) {
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
-	// if request comes from CTF, send full list of validation numbers
+	var args listRequest
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error unpacking user args.", http.StatusBadRequest)
+		return
+	}
+
+	err = json.Unmarshal(body, &args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error unmarshalling json!", err)
+		return
+	}
+
+	if args.SharedSecret == "" || cla.Config.CtfSecret != args.SharedSecret {
+		http.Error(w, "Sent shared secret does not belong to the CTF.", http.StatusForbidden)
+		return
+	}
+
+	if votingDone(cla) {
+		// Send the validation number list
+	} else {
+		w.WriteHeader(http.StatusTeapot)
+		w.Write([]byte("-1"))
+	}
+}
+
+func registrationHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
+	var args registration
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error unpacking user args.", http.StatusBadRequest)
+		return
+	}
+
+	err = json.Unmarshal(body, &args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error unmarshalling json!", err)
+		return
+	}
+
+	if args.Name == "" || args.SharedSecret == "" {
+		http.Error(w, "User did not send either their name or shared secret their request.", http.StatusBadRequest)
+		return
+	}
+
+	storedSecret := cla.AuthorizedVoters[args.Name]
+	if storedSecret != args.SharedSecret {
+		http.Error(w, "User is not an authorized voter.", http.StatusForbidden)
+		return
+	}
+
+	if votingDone(cla) {
+		w.WriteHeader(http.StatusTeapot)
+		w.Write([]byte("-1"))
+	}
+
+	if cla.voterNumberMap[args.Name] != "" {
+		http.Error(w, "User has already registered.", http.StatusBadRequest)
+		return
+	}
+
+	val := generateRandom(cla)
+	fmt.Println("Using: ", val)
+	cla.voterNumberMap[args.Name] = val
+
+	resp := val
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(resp))
 }
 
 func generateRandom(cla *Cla) string {
@@ -99,49 +172,6 @@ func votingDone(cla *Cla) bool {
 		}
 	}
 	return true
-}
-
-func registrationHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
-	var args registration
-
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Error unpacking user args.", http.StatusBadRequest)
-	}
-
-	err = json.Unmarshal(body, &args)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error unmarshalling json!", err)
-	}
-
-	if args.Name == "" || args.SharedSecret == "" {
-		http.Error(w, "User did not send either their name or shared secret their request.", http.StatusBadRequest)
-		return
-	}
-
-	storedSecret := cla.AuthorizedVoters[args.Name]
-	if storedSecret != args.SharedSecret {
-		http.Error(w, "User is not an authorized voter.", http.StatusForbidden)
-		return
-	}
-
-	if votingDone(cla) {
-		w.WriteHeader(http.StatusTeapot)
-		w.Write([]byte("-1"))
-	}
-
-	if cla.voterNumberMap[args.Name] != "" {
-		http.Error(w, "User has already registered.", http.StatusBadRequest)
-		return
-	}
-
-	val := generateRandom(cla)
-	fmt.Println("Using: ", val)
-	cla.voterNumberMap[args.Name] = val
-
-	resp := val
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(resp))
 }
 
 func main() {

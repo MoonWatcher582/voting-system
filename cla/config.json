@@ -1,7 +1,7 @@
 {
 	"config" : {
-		"claSecret": 1774,
-		"ctfSecret": 49832
+		"claSecret": "1774",
+		"ctfSecret": "49832"
 	},
 	"authorizedVoters": {
 		"Dale Cooper": "720947",
