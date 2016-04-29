@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -84,8 +85,14 @@ func listHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
 		return
 	}
 
-	if votingDone(cla) {
-		// Send the validation number list
+	if resp, err := votingDone(cla); err == nil {
+		w.WriteHeader(http.StatusOK)
+		respBytes, err := json.Marshal(resp)
+		if err != nil {
+			http.Error(w, "Could not marshal validation numbers!", http.StatusNotFound)
+			return
+		}
+		w.Write(respBytes)
 	} else {
 		w.WriteHeader(http.StatusTeapot)
 		w.Write([]byte("-1"))
@@ -118,7 +125,7 @@ func registrationHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
 		return
 	}
 
-	if votingDone(cla) {
+	if _, err := votingDone(cla); err != nil {
 		w.WriteHeader(http.StatusTeapot)
 		w.Write([]byte("-1"))
 	}
@@ -165,13 +172,17 @@ func presentInMap(cla *Cla, v uint64) bool {
 	return false
 }
 
-func votingDone(cla *Cla) bool {
+func votingDone(cla *Cla) ([]string, error) {
+	validationNums := make([]string, len(cla.voterNumberMap))
+	i := 0
 	for _, b := range cla.voterNumberMap {
 		if b == "" {
-			return false
+			return nil, errors.New("Voting is not done.")
 		}
+		validationNums[i] = b
+		i += 1
 	}
-	return true
+	return validationNums, nil
 }
 
 func main() {
