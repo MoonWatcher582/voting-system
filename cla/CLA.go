@@ -86,17 +86,31 @@ func listHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
 	}
 
 	if resp, err := votingDone(cla); err == nil {
-		w.WriteHeader(http.StatusOK)
-		respBytes, err := json.Marshal(resp)
+		err := sendToCtf(w, resp, cla)
 		if err != nil {
-			http.Error(w, "Could not marshal validation numbers!", http.StatusNotFound)
+			fmt.Fprintf(os.Stderr, "Failed to send to CTF")
 			return
 		}
-		w.Write(respBytes)
 	} else {
 		w.WriteHeader(http.StatusTeapot)
 		w.Write([]byte("-1"))
 	}
+}
+
+func sendToCtf(w http.ResponseWriter, toSend []string, cla *Cla) error {
+	w.WriteHeader(http.StatusOK)
+
+	resp := make(map[string]interface{})
+	resp["secret"] = cla.Config.ClaSecret
+	resp["validationNums"] = toSend
+
+	respBytes, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "Could not marshal validation numbers!", http.StatusNotFound)
+		return err
+	}
+	w.Write(respBytes)
+	return nil
 }
 
 func registrationHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
