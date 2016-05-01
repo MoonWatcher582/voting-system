@@ -14,16 +14,16 @@ type ctfConfig struct {
 }
 
 type candidate struct {
-	name		string
-	voteCount	[]int
-	voterIDs 	[]string // list of validation numbers who have voted for that particular candidate
+	name      string
+	voteCount []int
+	voterIDs  []string // list of validation numbers who have voted for that particular candidate
 }
 
 type Ctf struct {
-	Config					ctfConfig
-	candidates 				[]candidate
-	validationNumbers 		map[string]bool // validation values will be true if used, false otherwise
-	CandidateNames 			[]string // required to unmarshal json into
+	Config            ctfConfig
+	candidates        []candidate
+	validationNumbers map[string]bool // validation values will be true if used, false otherwise
+	CandidateNames    []string        // required to unmarshal json into
 }
 
 // create a new
@@ -62,6 +62,7 @@ func mapCandidateNames(ctf Ctf) {
 }
 
 func votingHandler(w http.ResponseWriter, r *http.Request, ctf *Ctf) {
+	// check if voting allowed by requesting validation numbers if you don't have them yet
 	// get voterID from request body
 
 	// will throw error either when voter ID has been used or doesn't exist
