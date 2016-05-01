@@ -101,7 +101,7 @@ func sendToCtf(w http.ResponseWriter, toSend []string, cla *Cla) error {
 	w.WriteHeader(http.StatusOK)
 
 	resp := make(map[string]interface{})
-	resp["secret"] = cla.Config.ClaSecret
+	resp["sharedSecret"] = cla.Config.ClaSecret
 	resp["validationNums"] = toSend
 
 	respBytes, err := json.Marshal(resp)
