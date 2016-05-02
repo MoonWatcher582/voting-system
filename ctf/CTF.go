@@ -15,7 +15,7 @@ type ctfConfig struct {
 
 type candidate struct {
 	name string
-	voteCount []int
+	voteCount int
 	voterIDs  []string // list of validation numbers who have voted for that particular candidate
 }
 
@@ -32,7 +32,7 @@ type voteRequest struct {
 
 type Ctf struct {
 	Config          	ctfConfig
-	candidates      	map[string]candidate // Map of candidate names to candidates
+	candidates      	map[string]*candidate // Map of candidate names to candidates
 	ValidationNums 		map[string]bool // validation values will be true if used, false otherwise
 	CandidateNames    	[]string        // required to unmarshal json into candidates
 }
@@ -57,21 +57,19 @@ func NewCtf(configFileName string) (*Ctf, error) {
 		return nil, err
 	}
 	// set candidate slice to len of the candidate name list
-	// ctf.candidates = make([]candidate, len(ctf.CandidateNames), cap(ctf.CandidateNames))
+	ctf.candidates = make(map[string]*candidate, len(ctf.CandidateNames))
 	mapCandidateNames(ctf)
 
 	return &ctf, nil
 }
 
-func mapCandidateNames(ctf Ctf) {
+func mapCandidateNames(ctf Ctf)(Ctf) {
 	for _, val := range ctf.CandidateNames {
-		// fmt.Println("Key: ", key, "\tVal: ", val)
 		// populate map by giving candidate name a non-zero value
-		ctf.candidates[val].name := val
+		ctf.candidates[val] = &candidate{}
 	}
-	fmt.Println(ctf.candidates)
 	ctf.CandidateNames = nil
-	return
+	return ctf
 }
 
 // grabs validation numbers from /list
@@ -116,21 +114,22 @@ func votingHandler(w http.ResponseWriter, r *http.Request, ctf *Ctf) {
 	}
 
 	// will throw error either when voter ID has been used or doesn't exist
-	if ctf.ValidationNums[args.VoterID] == true {
+	if ctf.ValidationNums[args.VoterID] == false {
 		http.Error(w, "Validation number is invalid", http.StatusForbidden)
 		return
 	}
 	// test if submitted candidate exists in candidate list
-	if _, ok := ctf.candidates[args.CandidateName] == false {
+	_, ok := ctf.candidates[args.CandidateName]
+	if ok == false {
 		http.Error(w, "Candidate does not exist in our directory. Please try again.",
-		http.StatusBadRequest)
+			http.StatusBadRequest)
 		return
 	}
 	// logic for voting
-	ctf.ValidationNums[arg.VoterID] == true
-	targetCandidate = ctf.candidates[args.CandidateName]
+	ctf.ValidationNums[args.VoterID] = true
+	targetCandidate := ctf.candidates[args.CandidateName]
 	targetCandidate.voteCount++
-	append(targetCandidate.VoterID, args.VoterID)
+	targetCandidate.voterIDs = append(targetCandidate.voterIDs, args.VoterID)
 }
 
 func main() {
