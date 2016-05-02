@@ -87,7 +87,7 @@ func listHandler(w http.ResponseWriter, r *http.Request, ctf *Ctf) {
 	}
 
 	if args.SharedSecret == "" || cla.Config.CtfSecret != args.SharedSecret {
-		http.Error(w, "Sent shared secret does not belong to the CTF.", http.StatusForbidden)
+		http.Error(w, "Sent shared secret does not belong to the CLA.", http.StatusForbidden)
 		return
 	}
 	for _, validationNum := range args.ValidationNums {
