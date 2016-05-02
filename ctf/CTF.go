@@ -14,7 +14,7 @@ type ctfConfig struct {
 }
 
 type candidate struct {
-	name      string
+	name string
 	voteCount []int
 	voterIDs  []string // list of validation numbers who have voted for that particular candidate
 }
@@ -57,18 +57,19 @@ func NewCtf(configFileName string) (*Ctf, error) {
 		return nil, err
 	}
 	// set candidate slice to len of the candidate name list
-	ctf.candidates = make([]candidate, len(ctf.CandidateNames), cap(ctf.CandidateNames))
+	// ctf.candidates = make([]candidate, len(ctf.CandidateNames), cap(ctf.CandidateNames))
 	mapCandidateNames(ctf)
 
 	return &ctf, nil
 }
 
 func mapCandidateNames(ctf Ctf) {
-	//TODO: populate empty map
-	for key, val := range ctf.CandidateNames {
+	for _, val := range ctf.CandidateNames {
 		// fmt.Println("Key: ", key, "\tVal: ", val)
-		ctf.candidates[key].name = val
+		// populate map by giving candidate name a non-zero value
+		ctf.candidates[val].name := val
 	}
+	fmt.Println(ctf.candidates)
 	ctf.CandidateNames = nil
 	return
 }
@@ -119,9 +120,14 @@ func votingHandler(w http.ResponseWriter, r *http.Request, ctf *Ctf) {
 		http.Error(w, "Validation number is invalid", http.StatusForbidden)
 		return
 	}
-
+	// test if submitted candidate exists in candidate list
+	if _, ok := ctf.candidates[args.CandidateName] == false {
+		http.Error(w, "Candidate does not exist in our directory. Please try again.",
+		http.StatusBadRequest)
+		return
+	}
+	// logic for voting
 	ctf.ValidationNums[arg.VoterID] == true
-
 	targetCandidate = ctf.candidates[args.CandidateName]
 	targetCandidate.voteCount++
 	append(targetCandidate.VoterID, args.VoterID)
