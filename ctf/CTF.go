@@ -19,20 +19,22 @@ type candidate struct {
 	voterIDs  []string // list of validation numbers who have voted for that particular candidate
 }
 
-type vote struct {
-	CandidateName string
-}
-
 type listRequest struct {
 	SharedSecret string
 	ValidationNums []string
 }
 
+type voteRequest struct {
+	SharedSecret string
+	CandidateName string
+	VoterID	string
+}
+
 type Ctf struct {
-	Config            ctfConfig
-	candidates        []candidate
-	ValidationNums map[string]bool // validation values will be true if used, false otherwise
-	CandidateNames    []string        // required to unmarshal json into candidates
+	Config          	ctfConfig
+	candidates      	map[string]candidate // Map of candidate names to candidates
+	ValidationNums 		map[string]bool // validation values will be true if used, false otherwise
+	CandidateNames    	[]string        // required to unmarshal json into candidates
 }
 
 func NewCtf(configFileName string) (*Ctf, error) {
@@ -62,6 +64,7 @@ func NewCtf(configFileName string) (*Ctf, error) {
 }
 
 func mapCandidateNames(ctf Ctf) {
+	//TODO: populate empty map
 	for key, val := range ctf.CandidateNames {
 		// fmt.Println("Key: ", key, "\tVal: ", val)
 		ctf.candidates[key].name = val
@@ -86,7 +89,7 @@ func listHandler(w http.ResponseWriter, r *http.Request, ctf *Ctf) {
 		return
 	}
 
-	if args.SharedSecret == "" || cla.Config.CtfSecret != args.SharedSecret {
+	if args.SharedSecret == "" || ctf.Config.ClaSecret != args.SharedSecret {
 		http.Error(w, "Sent shared secret does not belong to the CLA.", http.StatusForbidden)
 		return
 	}
@@ -96,6 +99,7 @@ func listHandler(w http.ResponseWriter, r *http.Request, ctf *Ctf) {
 }
 
 func votingHandler(w http.ResponseWriter, r *http.Request, ctf *Ctf) {
+	var args voteRequest
 	// check if voting allowed by requesting validation numbers if you don't have them yet
 	// get voterID from request body
 	body, err := ioutil.ReadAll(r.Body)
@@ -111,14 +115,16 @@ func votingHandler(w http.ResponseWriter, r *http.Request, ctf *Ctf) {
 	}
 
 	// will throw error either when voter ID has been used or doesn't exist
-	if ctf.validationNumbers[voterID] == true {
-		http.Error(w, "Voter ID not valid", http.StatusForbidden)
+	if ctf.ValidationNums[args.VoterID] == true {
+		http.Error(w, "Validation number is invalid", http.StatusForbidden)
 		return
 	}
-}
 
-func sendOutcome(ctf Ctf) {
-	// http POST
+	ctf.ValidationNums[arg.VoterID] == true
+
+	targetCandidate = ctf.candidates[args.CandidateName]
+	targetCandidate.voteCount++
+	append(targetCandidate.VoterID, args.VoterID)
 }
 
 func main() {
@@ -130,7 +136,7 @@ func main() {
 	}
 	http.HandleFunc("/list", func(w http.ResponseWriter, r *http.Request) {
 		listHandler(w, r, ctf)
-	}
+	})
 
 	http.HandleFunc("/vote", func(w http.ResponseWriter, r *http.Request) {
 		votingHandler(w, r, ctf)
