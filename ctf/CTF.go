@@ -238,5 +238,6 @@ func main() {
 	http.HandleFunc("/publish", func(w http.ResponseWriter, r *http.Request) {
 		publishHandler(w, r, ctf)
 	})
+	fmt.Println("Listening and Serving...")
 	http.ListenAndServeTLS(":9999", "certs/localhost.crt", "keys/localhost.key", nil)
 }
