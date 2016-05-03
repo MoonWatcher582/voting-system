@@ -24,25 +24,28 @@
             }
             h1 {
                 text-align: center;
+                font-size: 72px;
                 background-color: #9bbddb;
                 border: 14px solid #a4d4ff;
                 color: white;
                 width: 30%;
                 cursor: default;
             }
-			h3, h4 {
-				color: 	rgb(121,136,161);
-			}
+            h3,
+            h4 {
+                color: rgb(121,136,161);
+            }
             .row {
                 display: flex;
                 justify-content: center;
             }
-			.blurb > div > h4 {
-				cursor: default;
-			}
-			form, input {
-				text-align: left;
-			}
+            .blurb > div > h4 {
+                cursor: default;
+            }
+            form,
+            input {
+                text-align: left;
+            }
 
         </style>
     </head>
@@ -60,24 +63,22 @@
         <section class="row blurb">
             <div class="columns"></div>
             <div class="columns">
-				<h4 id={{.Type}}>{{.Text}}</h4>
+                <h4 id={{.Type}}>{{.Text}}</h4>
             </div>
             <div class="columns"></div>
         </section>
         <section class="row form">
-        	<div class="large-3 columns"></div>
-        	<div class="large-6 columns">
-        		<form action="/vote" method="POST">
-        		    Validation Number:
-        		    <input type="text" name="name"><br>
-        		    Password:
-        		    <input type="password" name="shared_secret"><br>
-        		    Candidate:
-        		    <input type="password" name="candidate"><br>
-        		    <input type="submit" value="Submit">
-        		</form>
-        	</div>
-        	<div class="large-3 columns"></div>
+            <div class="large-3 columns"></div>
+            <div class="large-6 columns">
+                <form action="/vote" method="POST">
+                    Candidate:
+                    <input type="text" name="candidate"><br>
+                    Validation:
+                    <input type="text" name="validation"><br>
+                    <input type="submit" value="Submit">
+                </form>
+            </div>
+            <div class="large-3 columns"></div>
         </section>
     </body>
 </html>

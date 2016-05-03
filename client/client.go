@@ -16,6 +16,10 @@ const (
 	HOME     = "client/templates/home.html"
 	REGISTER = "client/templates/register.html"
 	VOTE     = "client/templates/vote.html"
+	NO_VOTE    = "client/templates/no_vote.html"
+ 	PUBLISH    = "client/templates/publish.html"
+ 	NO_PUBLISH = "client/templates/no_publish.html"
+  )
 	CSS		 = "client/static/style.css"
 )
 
@@ -27,6 +31,21 @@ type Message struct {
 type Registration struct {
 	Name         string
 	SharedSecret string
+}
+
+type Vote struct {
+	Candidate     string
+	ValidationNum string
+}
+
+type Candidate struct {
+	Name      string
+	VoteCount int
+	VoterIDs  []string
+}
+
+type PublishResp struct {
+	Candidates []*Candidate
 }
 
 var client *http.Client
@@ -144,8 +163,7 @@ func main() {
 	})
 	http.HandleFunc("/vote", votingHandler)
 	// handle css
-    // http.Handle("/static", http.StripPrefix("/static/", http.FileServer(http.Dir(CSS))))
-	http.ServeFile(w ResponseWriter, r *Request, "static/style.css")
+    http.Handle("/static", http.StripPrefix("/static/", http.FileServer(http.Dir(CSS))))
 	fmt.Println("Serving static at ", CSS)
 	fmt.Println("Listening and serving...")
 	http.ListenAndServe(":8998", nil)
