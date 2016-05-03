@@ -44,6 +44,7 @@
             input {
                 text-align: left;
             }
+
         </style>
     </head>
     <body>
@@ -58,23 +59,20 @@
             <h1 class="columns">RESULTS</h1>
             <div class="columns"></div>
         </section>
-        <section class="results row">
             {{ range $can := .Candidates }}
-                <div class="row">
                     <p>{{ $can.Name }}:
                         {{ $can.VoteCount }}</p>
-                </div>
-                <div class="row">
                     <p>Voters:</p>
                     {{ range $voter := $can.VoterIDs }}
-                        <p>
-                        {{ $voter }}
-                    </p>
-                </div>
+                            <p>
+                                {{ $voter }}
+                            </p>
+                        </div>
+                    </div>
                 {{ end }}
                 <br>
                 <br>
             {{ end }}
-        </section>
+     </section>
     </body>
 </html>
