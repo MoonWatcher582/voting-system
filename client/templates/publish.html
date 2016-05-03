@@ -5,7 +5,15 @@
 	</head>
 	<body>
 	<a href="home">home</a>|<a href="registration">registration</a>|<a href="vote">vote</a>|<a href="results">results</a>
-		<h1>VIRTUAL ELECTION BOOTH</h1>
-		<p id={{.Type}}>{{.Text}}</p>
+		<h1>RESULTS</h1>
+		{{ range $can := .Candidates }}
+		<p>{{ $can.Name }}: {{ $can.VoteCount }}</p>
+		<p>Voters:</p>
+		{{ range $voter := $can.VoterIDs }}
+		<p> {{ $voter }} </p>
+		{{ end }}
+		<br>
+		<br>
+		{{ end }}
 	</body>
 </html>
