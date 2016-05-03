@@ -58,17 +58,23 @@
             <h1 class="columns">RESULTS</h1>
             <div class="columns"></div>
         </section>
-        {{ range $can := .Candidates }}
-            <p>{{ $can.Name }}:
-                {{ $can.VoteCount }}</p>
-            <p>Voters:</p>
-            {{ range $voter := $can.VoterIDs }}
-                <p>
-                    {{ $voter }}
-                </p>
+        <section class="results row">
+            {{ range $can := .Candidates }}
+                <div class="row">
+                    <p>{{ $can.Name }}:
+                        {{ $can.VoteCount }}</p>
+                </div>
+                <div class="row">
+                    <p>Voters:</p>
+                    {{ range $voter := $can.VoterIDs }}
+                        <p>
+                        {{ $voter }}
+                    </p>
+                </div>
+                {{ end }}
+                <br>
+                <br>
             {{ end }}
-            <br>
-            <br>
-        {{ end }}
+        </section>
     </body>
 </html>
