@@ -16,6 +16,7 @@ const (
 	HOME     = "client/templates/home.html"
 	REGISTER = "client/templates/register.html"
 	VOTE     = "client/templates/vote.html"
+	CSS		 = "client/static/style.css"
 )
 
 type Message struct {
@@ -92,6 +93,10 @@ func votingHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func staticHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func renderError(w http.ResponseWriter, r *http.Request, text string, err error, page string) {
 	if err != nil {
 		fmt.Printf(err.Error())
@@ -142,6 +147,9 @@ func main() {
 		}
 	})
 	http.HandleFunc("/vote", votingHandler)
+	// handle css
+	// Normal resources
+    http.HandleFunc("/static", staticHandler)
 	fmt.Println("Listening and serving...")
 	http.ListenAndServe(":8998", nil)
 }

@@ -1,11 +1,23 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>VIRTUAL ELECTION BOOTH</title>
-	</head>
-	<body>
-		<a href="home">home</a>|<a href="registration">registration</a>|<a href="vote">vote</a>
-		<h1>VOTE</h1>
-		<p id={{.Type}}>{{.Text}}</p>
-	</body>
+<head>
+	<title>VIRTUAL ELECTION BOOTH</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.1/foundation-flex.css" media="screen" title="no title" charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="../static/style.css" media="screen" title="no title" charset="utf-8">
+</head>
+<body>
+	<nav class="row">
+		<a class="columns" href="home">home</a>
+		<a class="columns" href="registration">registration</a>
+		<a class="columns" href="vote">vote</a>
+	</nav>
+	<h1>VOTE</h1>
+	<p id={{.Type}}>{{.Text}}</p>
+	<form action="/vote" method="POST">
+		Validation Number: <input type="text" name="name"><br>
+		Password: <input type="password" name="shared_secret"><br>
+		Candidate: <input type="text" name="candidate"><br>
+		<input type="submit" value="Submit">
+	</form>
+</body>
 </html>
