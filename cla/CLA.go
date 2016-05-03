@@ -76,7 +76,7 @@ func listHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
 
 	err = json.Unmarshal(body, &args)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error unmarshalling json!", err)
+		fmt.Fprintln(os.Stderr, "CLA list: Error unmarshalling json:", err)
 		return
 	}
 
@@ -88,18 +88,16 @@ func listHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
 	if resp, err := votingDone(cla); err == nil {
 		err := sendToCtf(w, resp, cla)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to send to CTF")
+			fmt.Fprintf(os.Stderr, "CLA list: Failed to send to CTF:", err)
 			return
 		}
 	} else {
-		w.WriteHeader(http.StatusTeapot)
+		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("-1"))
 	}
 }
 
 func sendToCtf(w http.ResponseWriter, toSend []string, cla *Cla) error {
-	w.WriteHeader(http.StatusOK)
-
 	resp := make(map[string]interface{})
 	resp["sharedSecret"] = cla.Config.ClaSecret
 	resp["validationNums"] = toSend
@@ -109,12 +107,20 @@ func sendToCtf(w http.ResponseWriter, toSend []string, cla *Cla) error {
 		http.Error(w, "Could not marshal validation numbers!", http.StatusNotFound)
 		return err
 	}
+	w.WriteHeader(http.StatusOK)
 	w.Write(respBytes)
 	return nil
 }
 
 func registrationHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
 	var args registration
+
+	if _, err := votingDone(cla); err == nil {
+		fmt.Fprintln(os.Stdin, "Voting is completed")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("-1"))
+		return
+	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -137,11 +143,6 @@ func registrationHandler(w http.ResponseWriter, r *http.Request, cla *Cla) {
 	if storedSecret != args.SharedSecret {
 		http.Error(w, "User is not an authorized voter.", http.StatusForbidden)
 		return
-	}
-
-	if _, err := votingDone(cla); err != nil {
-		w.WriteHeader(http.StatusTeapot)
-		w.Write([]byte("-1"))
 	}
 
 	if cla.voterNumberMap[args.Name] != "" {
@@ -211,6 +212,17 @@ func main() {
 	})
 	http.HandleFunc("/list", func(w http.ResponseWriter, r *http.Request) {
 		listHandler(w, r, cla)
+	})
+	http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := votingDone(cla); err == nil {
+			fmt.Fprintln(os.Stdin, "Ready to vote")
+			w.WriteHeader(http.StatusOK)
+			return
+		} else {
+			fmt.Fprintln(os.Stdin, "Not ready to vote")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 	})
 	fmt.Println("Listening and Serving...")
 	http.ListenAndServeTLS(":9889", "certs/localhost.crt", "keys/localhost.key", nil)
