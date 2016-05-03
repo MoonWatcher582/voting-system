@@ -2,8 +2,6 @@
 <html>
     <head>
         <title>VIRTUAL ELECTION BOOTH</title>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.1/foundation-flex.css" media="screen" title="no title" charset="utf-8">
-        <link rel="stylesheet" type="text/css" href="../static/style.css" media="screen" title="no title" charset="utf-8">
         <style media="screen">
             * {
                 margin: 1em;
@@ -45,7 +43,6 @@
             input {
                 text-align: left;
             }
-
         </style>
     </head>
     <body>
@@ -56,28 +53,20 @@
         </nav>
         <section class="row header">
             <div class="columns"></div>
-            <h1 class="columns">REGISTER</h1>
+            <h1 class="columns">RESULTS</h1>
             <div class="columns"></div>
         </section>
-        <section class="row blurb">
-            <div class="columns"></div>
-            <div class="columns">
-                <h4 id={{.Type}}>{{.Text}}</h4>
-            </div>
-            <div class="columns"></div>
-        </section>
-        <section class="row form">
-            <div class="large-3 columns"></div>
-            <div class="large-6 columns">
-                <form action="/vote" method="POST">
-                    Name:
-                    <input type="text" name="name"><br>
-                    Password:
-                    <input type="password" name="shared_secret"><br>
-                    <input type="submit" value="Submit">
-                </form>
-            </div>
-            <div class="large-3 columns"></div>
-        </section>
+        {{ range $can := .Candidates }}
+            <p>{{ $can.Name }}:
+                {{ $can.VoteCount }}</p>
+            <p>Voters:</p>
+            {{ range $voter := $can.VoterIDs }}
+                <p>
+                    {{ $voter }}
+                </p>
+            {{ end }}
+            <br>
+            <br>
+        {{ end }}
     </body>
 </html>
